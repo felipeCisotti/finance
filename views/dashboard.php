@@ -123,7 +123,7 @@ $saldo = $total_receita - $total_despesa;
             <div class="menu-label">Actions</div>
             <a href="relatorios.php" class="menu-item">
                 <i class="fa-solid fa-money-bill"></i>
-                <span>Despesas</span>
+                <span>Relatórios</span>
             </a>
             <a href="useradd.php" class="menu-item">
                 <i class="fa-solid fa-credit-card"></i>
