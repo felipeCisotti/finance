@@ -10,29 +10,51 @@ if (!isset($_SESSION['usuario'])) {
 
 $registro_sucesso = false;
 
+if (isset($_GET['id'])) {
+    $deleteId = intval($_GET['id']);
+
+    // Excluir da tabela transacoes
+    $deleteTransacao = "DELETE FROM transacoes WHERE id = $deleteId";
+    mysqli_query($connect, $deleteTransacao);
+
+    // Excluir da tabela despesas relacionada
+    $deleteDespesas = "DELETE FROM despesas WHERE id_transacao = $deleteId";
+    mysqli_query($connect, $deleteDespesas);
+
+    // Excluir da tabela receitas_mensais relacionada
+    $deleteReceitas = "DELETE FROM receitas_mensais WHERE id_transacao = $deleteId";
+    mysqli_query($connect, $deleteReceitas);
+
+    // Redireciona de volta para o dashboard
+    header("Location: dashboard.php");
+    exit();
+}
+
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $tipo_transacao = $_POST['tipo_transacao'];
-    $descricao = mysqli_real_escape_string($connect, $_POST['descricao']);
-    $valor = mysqli_real_escape_string($connect, $_POST['valor']);
-    $tipo = mysqli_real_escape_string($connect, $_POST['tipo']);
-    $categoria_nome = isset($_POST['categoria_nome']) ? "'" . mysqli_real_escape_string($connect, $_POST['categoria_nome']) . "'" : "NULL";
+    $tipo_transacao = mysqli_real_escape_string($connect, $_POST['tipo_transacao']);
+$descricao = mysqli_real_escape_string($connect, $_POST['descricao']);
+$valor = mysqli_real_escape_string($connect, $_POST['valor']);
+$tipo = mysqli_real_escape_string($connect, $_POST['tipo']);
+$categoria_nome = mysqli_real_escape_string($connect, $_POST['categoria_nome']);
+$data = mysqli_real_escape_string($connect, $_POST['data_hora']); // só a data
 
 
     // Primeiro, insere na tabela de transações
-    $sql_transacao = "INSERT INTO transacoes (tipo_transacao, descricao, valor, tipo, categoria_nome)
-                  VALUES ('$tipo_transacao', '$descricao', '$valor', '$tipo', $categoria_nome)";
+   $sql_transacao = "INSERT INTO transacoes (tipo_transacao, descricao, valor, tipo, categoria_nome, data_hora)
+                  VALUES ('$tipo_transacao', '$descricao', '$valor', '$tipo', '$categoria_nome', '$data')";
 
     if (mysqli_query($connect, $sql_transacao)) {
         // Se for uma receita
         if ($tipo_transacao == 'receita') {
-            $sql_receita = "INSERT INTO receitas_mensais (descricao, valor, data_registro, hora_registro)
-                            VALUES ('$descricao', '$valor', CURRENT_DATE, CURRENT_TIME)";
+            $sql_receita = "INSERT INTO receitas_mensais (descricao, valor, data_registro)
+                        VALUES ('$descricao', '$valor', '$data')";
             mysqli_query($connect, $sql_receita);
         }
         // Se for uma despesa
         elseif ($tipo_transacao == 'despesa') {
             $sql_despesa = "INSERT INTO despesas (descricao, valor, data_hora, tipo, categoria_nome)
-                            VALUES ('$descricao', '$valor', CURRENT_TIMESTAMP, '$tipo', " . ($categoria_nome ?: "NULL") . ")";
+                        VALUES ('$descricao', '$valor', '$data', '$tipo', " . ($categoria_nome ? "'$categoria_nome'" : "NULL") . ")";
             mysqli_query($connect, $sql_despesa);
         }
 
@@ -99,7 +121,7 @@ $saldo = $total_receita - $total_despesa;
             </a>
 
             <div class="menu-label">Actions</div>
-            <a href="add.php" class="menu-item">
+            <a href="relatorios.php" class="menu-item">
                 <i class="fa-solid fa-money-bill"></i>
                 <span>Despesas</span>
             </a>
@@ -180,55 +202,70 @@ $saldo = $total_receita - $total_despesa;
             </div>
 
 
-<section class="table">
-    <div class="table-header">
-        <h2>Transações Recentes</h2>
-    </div>
+            <section class="table">
+                <div class="table-header">
+                    <h2>Transações Recentes</h2>
+                </div>
 
-    <?php
-    // --- DELETA A TRANSAÇÃO ---
-    if (isset($_GET['delete'])) {
-        $deleteId = intval($_GET['delete']);
-        $deleteSql = "DELETE FROM transacoes WHERE id = $deleteId";
-        mysqli_query($connect, $deleteSql);
+                <?php
+                // --- DELETA A TRANSAÇÃO ---
+                if (isset($_GET['delete'])) {
+                    $deleteId = intval($_GET['delete']);
+                    $deleteSql = "DELETE FROM transacoes WHERE id = $deleteId";
+                    mysqli_query($connect, $deleteSql);
 
-    }
+                }
 
-    // --- MOSTRA AS TRANSAÇÕES ---
-    $sqlAll = "SELECT id, tipo_transacao, descricao, valor, categoria_nome, data_hora FROM transacoes";
-    $resAll = $connect->query($sqlAll);
+                // --- MOSTRA AS TRANSAÇÕES ---
+                $sqlAll = "SELECT id, tipo_transacao, descricao, valor, categoria_nome, data_hora FROM transacoes ORDER BY data_hora DESC LIMIT 10";
+                $resAll = $connect->query($sqlAll);
 
-    if ($resAll && $resAll->num_rows > 0) {
-        echo "<table class='trans-table'>";
-        echo "<thead><tr><th>Descrição</th><th>Valor</th><th>Data</th><th>Tipo</th><th>Categoria</th></tr></thead>";
-        echo "<tbody>";
+                if ($resAll && $resAll->num_rows > 0) {
+                    echo "<table class='trans-table'>";
+                    echo "<thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Categoria</th>
+                            <th>Ações</th>
+                        </tr>
+        </thead>";
+                    echo "<tbody>";
 
-        while ($u = $resAll->fetch_assoc()) {
-            echo "<tr>";
-            echo "<td data-label='Descrição'>" . htmlspecialchars($u['descricao']) . "</td>";
-            echo "<td data-label='Valor'>R$ " . number_format($u['valor'], 2, ',', '.') . "</td>";
-            echo "<td data-label='Data'>" . date('d/m/Y H:i:s', strtotime($u['data_hora'])) . "</td>";
+                    while ($u = $resAll->fetch_assoc()) {
+                        echo "<tr>";
+                        echo "<td data-label='Descrição'>" . htmlspecialchars($u['descricao']) . "</td>";
+                        echo "<td data-label='Valor'>R$ " . number_format($u['valor'], 2, ',', '.') . "</td>";
+                        echo "<td data-label='Data'>" . date('d/m/Y', strtotime($u['data_hora'])) . "</td>";
 
-            // Ícone de tipo
-            echo "<td data-label='Tipo'>";
-            if ($u['tipo_transacao'] === 'receita') {
-                echo "<i class='fa-solid fa-arrow-up' style='color: #28a745;'></i>";
-            } else {
-                echo "<i class='fa-solid fa-arrow-down' style='color: #dc3545;'></i>";
-            }
-            echo "</td>";
+                        // Ícone de tipo
+                        echo "<td data-label='Tipo'>";
+                        if ($u['tipo_transacao'] === 'receita') {
+                            echo "<i class='fa-solid fa-arrow-up' style='color: #28a745;'></i>";
+                        } else {
+                            echo "<i class='fa-solid fa-arrow-down' style='color: #dc3545;'></i>";
+                        }
+                        echo "</td>";
 
-            echo "<td data-label='Categoria'>" . htmlspecialchars($u['categoria_nome']) . "</td>";
-            echo "</tr>";
-        }
+                        echo "<td data-label='Categoria'>" . htmlspecialchars($u['categoria_nome']) . "</td>";
+echo "<td data-label='Ações'>
+        <a href='../back/excluir_transacoes.php?id=" . $u['id'] . "' 
+           onclick=\"return confirm('Tem certeza que deseja excluir esta transação?');\">
+           <i class='fa-solid fa-trash' style='color: #dc3545;'></i>
+        </a>
+      </td>";
 
-        echo "</tbody></table>";
-    } else {
-        echo "<p>Nenhuma Transação Feita.</p>";
-    }
-    ?>
-</section>
+                        echo "</tr>";
+                    }
 
+                    echo "</tbody></table>";
+                } else {
+                    echo "<p>Nenhuma Transação Feita.</p>";
+                }
+                ?>
+            </section>
 
             <section class="FORMULARIO">
 
@@ -253,16 +290,19 @@ $saldo = $total_receita - $total_despesa;
                         <option value="variavel">Variável</option>
                     </select>
 
+                    <label>Data:</label>
+                    <input type="date" name="data_hora" required>
+
                     <div id="categoriaField" class="hidden">
                         <label>Categoria:</label>
                         <select name="categoria_nome">
                             <option value="">Selecione</option>
                             <?php
-    $categorias = mysqli_query($connect, "SELECT * FROM categorias ORDER BY nome ASC");
-    while ($cat = mysqli_fetch_assoc($categorias)) {
-        echo "<option value='{$cat['nome']}'>{$cat['nome']}</option>";
-    }
-    ?>
+                            $categorias = mysqli_query($connect, "SELECT * FROM categorias ORDER BY nome ASC");
+                            while ($cat = mysqli_fetch_assoc($categorias)) {
+                                echo "<option value='{$cat['nome']}'>{$cat['nome']}</option>";
+                            }
+                            ?>
                         </select>
                     </div>
                     <div class="botao">
@@ -278,7 +318,8 @@ $saldo = $total_receita - $total_despesa;
                     <div class="toast" id="myToast" role="alert" aria-live="assertive" aria-atomic="true"
                         data-bs-autohide="true">
                         <div class="toast-header">
-                            <img src="../assets/joia.jpg" class="rounded me-2" alt="..." style="width: 20px; height: 20px; object-fit: cover;">
+                            <img src="../assets/joia.jpg" class="rounded me-2" alt="..."
+                                style="width: 100px; height: 100px; object-fit: cover;">
                             <strong class="me-auto">Sistema</strong>
                             <small>Agora</small>
                             <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -340,11 +381,11 @@ $saldo = $total_receita - $total_despesa;
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-        crossorigin="anonymous"></script>
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous">
+        </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
-        integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
-        crossorigin="anonymous"></script>
+        integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" crossorigin="anonymous">
+        </script>
 </body>
 
 </html>
