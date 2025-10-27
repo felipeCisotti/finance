@@ -52,7 +52,8 @@ VALUES
 
 ALTER TABLE transacoes MODIFY categoria_nome VARCHAR(100) NULL;
 ALTER TABLE transacoes DROP FOREIGN KEY transacoes_ibfk_1;
-	
+
+
 
 insert into usuarios (nome) values ('felipe');
 
