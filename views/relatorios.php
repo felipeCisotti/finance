@@ -70,7 +70,7 @@ $showToast = isset($_GET['success']) && $_GET['success'] == "1";
         <a href="dashboard.php" class="menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
         <div class="menu-label">Actions</div>
         <a href="relatorios.php" class="menu-item active"><i class="fa-solid fa-money-bill"></i><span>Relatórios</span></a>
-        <a href="useradd.php" class="menu-item"><i class="fa-solid fa-credit-card"></i><span>Cartões</span></a>
+        <a href="cartoes.php" class="menu-item"><i class="fa-solid fa-credit-card"></i><span>Cartões</span></a>
         <div class="menu-label">Content</div>
         <a href="#" class="menu-item" id="contentMenu"><i class="fas fa-list"></i><span>Anexos</span><i class="fas fa-chevron-down"></i></a>
         <div class="submenu" id="contentSubmenu">
@@ -129,6 +129,12 @@ $showToast = isset($_GET['success']) && $_GET['success'] == "1";
             </div>
         </div>
 
+
+        <a href="../back/export_excel.php" class="btn btn-success mt-3">
+    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+</a>
+
+
         <!-- Toast -->
         <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
             <div class="toast" id="myToast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true">
@@ -142,8 +148,9 @@ $showToast = isset($_GET['success']) && $_GET['success'] == "1";
             </div>
         </div>
     </div>
-</main>
 
+    
+</main>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
 <script>
